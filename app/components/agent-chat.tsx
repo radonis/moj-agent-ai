@@ -103,6 +103,13 @@ function toChatMessage(row: StoredMessage): AppMessage {
 }
 
 function extractName(text: string) {
+  const initialNameMatch = text.match(/(?:mam na imi[eę]|nazywam si[eę]|jestem)\s+([^\s,!.?]{2,})/i);
+  if (initialNameMatch?.[1]) {
+    const candidate = initialNameMatch[1].trim();
+    if (!/^(programist[aą]|ksi[eę]gow[aą]|student(?:em)?|zawodu)$/i.test(candidate)) {
+      return `${candidate[0].toUpperCase()}${candidate.slice(1).toLowerCase()}`;
+    }
+  }
   const match = text.match(
     /(?:mam na imie|nazywam sie|jestem)\s+([A-Za-zÀ-ÖØ-öø-ÿĄĆĘŁŃÓŚŹŻąćęłńóśźż-]{2,})/i,
   );
@@ -111,6 +118,19 @@ function extractName(text: string) {
 
 function extractPreferences(text: string) {
   const preferences: Record<string, string> = {};
+  const patterns: Array<[string, RegExp]> = [
+    ["miasto", /(?:mieszkam w|jestem z)\s+(.+?)(?:[.!?]|$)/i],
+    ["firma", /(?:pracuj[eę] w|moja firma to)\s+(.+?)(?:[.!?]|$)/i],
+    ["stanowisko", /(?:moje stanowisko to|jestem na stanowisku)\s+(.+?)(?:[.!?]|$)/i],
+    ["zawod", /(?:z zawodu jestem|m[oó]j zaw[oó]d to)\s+(.+?)(?:[.!?]|$)/i],
+    ["czym_sie_zajmuje", /(?:zajmuj[eę] si[eę])\s+(.+?)(?:[.!?]|$)/i],
+    ["ulubione_jedzenie", /(?:moje ulubione jedzenie to|najbardziej lubi[eę] je[sś][cć])\s+(.+?)(?:[.!?]|$)/i],
+  ];
+  for (const [key, pattern] of patterns) {
+    const value = text.match(pattern)?.[1]?.trim();
+    if (value) preferences[key] = value;
+  }
+  if (Object.keys(preferences).length) return preferences;
   const likesMatch = text.match(/lubie\s+(.+?)(?:[.!?]|$)/i);
   const cityMatch = text.match(/mieszkam w\s+(.+?)(?:[.!?]|$)/i);
 
@@ -789,6 +809,8 @@ export function AgentChat({
   }
 
   async function submitText(text: string) {
+    const previousName = userProfileRef.current?.name;
+    const updatedProfile = await saveRememberedDetails(text);
     await sendMessage(
       { text, metadata: { mode, model } },
       {
@@ -796,7 +818,9 @@ export function AgentChat({
           mode,
           model,
           image: attachedImage ?? undefined,
-          userProfile: userProfileRef.current ?? undefined,
+          userProfile: updatedProfile ?? userProfileRef.current ?? undefined,
+          justLearnedName:
+            !previousName && updatedProfile?.name ? updatedProfile.name : undefined,
         },
       },
     );

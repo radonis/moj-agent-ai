@@ -184,7 +184,7 @@ export function ProfilePanel() {
             <h1>Profil uzytkownika</h1>
             <p>
               Tutaj zapisujesz informacje o sobie, z ktorych agent moze korzystac w wielu
-              rozmowach na tym komputerze.
+              rozmowach na Twoim koncie.
             </p>
           </div>
           <div className="profile-hero-stats">

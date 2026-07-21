@@ -58,6 +58,7 @@ export type RequestBody = {
   model?: ChatModel;
   image?: ChatImagePayload;
   userProfile?: UserProfilePayload;
+  justLearnedName?: string;
 };
 
 export const modeOptions: Array<{

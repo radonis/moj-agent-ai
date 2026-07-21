@@ -114,8 +114,16 @@ function formatSources(
 }
 
 function buildPersonalizationPrompt(profile?: UserProfilePayload) {
+  const profileFields = [
+    ["miasto", "miasto"],
+    ["firma", "firma"],
+    ["stanowisko", "stanowisko"],
+    ["zawod", "zawód"],
+    ["czym_sie_zajmuje", "czym się zajmuje"],
+    ["ulubione_jedzenie", "ulubione jedzenie"],
+  ] as const;
   if (!profile?.name) {
-    return "\n\nTo nowy uzytkownik. Na poczatku pierwszej rozmowy przywitaj sie krotko i zapytaj, jak ma na imie. Gdy poda imie, przywitaj go cieplo po imieniu.";
+    return "\n\nTo nowy użytkownik. Na początku pierwszej rozmowy przywitaj się krótko i zapytaj wyłącznie o imię. Gdy użytkownik je poda, odpowiedz: Miło Cię poznać, [imię]! Zapamiętam. Nie pytaj jeszcze o inne dane.";
   }
 
   const labels: Record<string, string> = {
@@ -132,7 +140,11 @@ function buildPersonalizationPrompt(profile?: UserProfilePayload) {
     .map(([key, value]) => `${labels[key] ?? key}: ${value}`)
     .join(", ");
 
-  return `\n\nUzytkownik ma na imie ${profile.name}. Zwracaj sie do niego po imieniu, badz cieply i personalny - to staly uzytkownik.${preferences ? ` Zapisane preferencje: ${preferences}. Korzystaj z nich tylko wtedy, gdy sa przydatne dla odpowiedzi.` : ""}`;
+  const missingFields = profileFields
+    .filter(([key]) => !profile.preferences?.[key]?.trim())
+    .map(([, label]) => label);
+
+  return `\n\nUżytkownik ma na imię ${profile.name}. Zwracaj się do niego po imieniu, bądź ciepły i personalny - to stały użytkownik.${preferences ? ` Zapisane dane profilu: ${preferences}. Korzystaj z nich tylko wtedy, gdy są przydatne dla odpowiedzi.` : ""}${missingFields.length ? ` Jeśli rozmowa naturalnie na to pozwala, możesz zadać jedno krótkie pytanie o JEDNĄ z brakujących danych profilu: ${missingFields.join(", ")}. Nigdy nie pytaj o dane spoza tej listy ani o kilka pól naraz.` : ""}`;
 }
 
 function getMessageText(message: RequestBody["messages"][number]) {
@@ -342,7 +354,7 @@ Instrukcja nadrzedna dla odpowiedzi z bazy wiedzy:
 
   const { result, resolvedModel } = await generateWithModelFallback({
     messages: enrichedMessages,
-    system: `${chatPrompts[mode]}${buildPersonalizationPrompt(body.userProfile)}
+    system: `${chatPrompts[mode]}${buildPersonalizationPrompt(body.userProfile)}${body.justLearnedName ? `\n\nUżytkownik właśnie podał imię ${body.justLearnedName}. Rozpocznij odpowiedź dokładnie od: "Miło Cię poznać, ${body.justLearnedName}! Zapamiętam."` : ""}
 
 Masz dostep do prawdziwego internetu i wielu narzedzi.
 - Masz dostep do bazy wiedzy firmy przez narzedzie searchKnowledge.
