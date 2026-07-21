@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# Next.js build output
+/.next
+/out
+
+# environment variables and secrets
+.env*
+!.env.example
+
+# logs
+*.log
+
+# TypeScript build metadata
+*.tsbuildinfo
+
+# editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
