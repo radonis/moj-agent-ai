@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthGuard } from "./components/auth-guard";
 
 export const metadata: Metadata = {
   title: "Marta - doradczyni podatkowa dla JDG, B2B i spółek",
@@ -14,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body>{children}</body>
+      <body><AuthGuard>{children}</AuthGuard></body>
     </html>
   );
 }

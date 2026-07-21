@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getAuthenticatedUser } from "../lib/auth";
 import { AppNav } from "./app-nav";
 
 type Message = {
@@ -41,11 +42,19 @@ export function HistoryDetail() {
         setStatus("Brak konfiguracji Supabase.");
         return;
       }
+      let user;
+      try {
+        user = await getAuthenticatedUser();
+      } catch {
+        setStatus("Wymagane logowanie.");
+        return;
+      }
 
       const { data: conversationData, error: conversationError } = await supabase
         .from("conversations")
         .select("id,title,updated_at")
         .eq("id", params.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (conversationError || !conversationData) {

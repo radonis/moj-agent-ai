@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AppNav } from "./app-nav";
 import { supabase } from "../lib/supabase";
-import { getBrowserUserId } from "../lib/user";
+import { getAuthenticatedUser } from "../lib/auth";
 import { ensureProfileWithLastSeen, formatLastSeen } from "../lib/profile";
 
 type ProfileFormState = {
@@ -78,7 +78,7 @@ export function ProfilePanel() {
         return;
       }
 
-      const userId = getBrowserUserId();
+      const userId = (await getAuthenticatedUser()).id;
       try {
         const profile = (await ensureProfileWithLastSeen(supabase, userId)) as StoredProfile;
 

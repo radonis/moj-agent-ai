@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
 
 export const navItems = [
   { href: "/", label: "Dashboard", shortLabel: "Dashboard" },
@@ -27,6 +28,7 @@ const primaryRoutes = new Set(["/", "/profile", "/chat", "/agent", "/history", "
 
 export function AppNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   function closeMenu() {
@@ -39,6 +41,11 @@ export function AppNav() {
     }
 
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  async function signOut() {
+    await supabase?.auth.signOut();
+    router.replace("/login");
   }
 
   return (
@@ -77,6 +84,9 @@ export function AppNav() {
             </Link>
           ))}
         </nav>
+        <button className="secondary-button" type="button" onClick={() => void signOut()}>
+          Wyloguj
+        </button>
       </aside>
     </>
   );

@@ -25,7 +25,7 @@ import {
 } from "../lib/agent";
 import { ensureProfileWithLastSeen } from "../lib/profile";
 import { supabase } from "../lib/supabase";
-import { getBrowserUserId } from "../lib/user";
+import { getAuthenticatedUser } from "../lib/auth";
 import { AppNav } from "./app-nav";
 import { SimpleMarkdown } from "./simple-markdown";
 
@@ -423,6 +423,7 @@ export function AgentChat({
   const [userProfile, setUserProfile] = useState<StoredUserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileStatus, setProfileStatus] = useState("");
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const exportTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -487,10 +488,9 @@ export function AgentChat({
       }
 
       try {
-        const profile = (await ensureProfileWithLastSeen(
-          supabase,
-          getBrowserUserId(),
-        )) as StoredUserProfile;
+        const user = await getAuthenticatedUser();
+        setAuthenticatedUserId(user.id);
+        const profile = (await ensureProfileWithLastSeen(supabase, user.id)) as StoredUserProfile;
 
         if (!isActive) return;
 
@@ -525,10 +525,12 @@ export function AgentChat({
 
       setHistoryLoading(true);
       setHistoryStatus("Laduje historie rozmowy...");
+      const user = await getAuthenticatedUser();
 
       let conversationQuery = supabase
         .from("conversations")
-        .select("id,title,updated_at");
+        .select("id,title,updated_at")
+        .eq("user_id", user.id);
 
       if (requestedConversationId) {
         conversationQuery = conversationQuery.eq("id", requestedConversationId);
@@ -616,7 +618,7 @@ export function AgentChat({
   useEffect(() => {
     const client = supabase;
 
-    if (historyLoading || !client) {
+    if (historyLoading || !client || !authenticatedUserId) {
       return;
     }
 
@@ -655,7 +657,7 @@ export function AgentChat({
         if (!activeConversationId) {
           const { data: createdConversation, error: createError } = await client
             .from("conversations")
-            .insert({ title })
+            .insert({ title, user_id: authenticatedUserId })
             .select("id,title")
             .single();
 
@@ -674,7 +676,8 @@ export function AgentChat({
           const { error: titleError } = await client
             .from("conversations")
             .update({ title })
-            .eq("id", activeConversationId);
+            .eq("id", activeConversationId)
+            .eq("user_id", authenticatedUserId);
 
           if (titleError) {
             throw titleError;
@@ -697,7 +700,8 @@ export function AgentChat({
         const { error: updateError } = await client
           .from("conversations")
           .update({ updated_at: new Date().toISOString() })
-          .eq("id", activeConversationId);
+          .eq("id", activeConversationId)
+          .eq("user_id", authenticatedUserId);
 
         if (updateError) {
           throw updateError;
@@ -719,7 +723,7 @@ export function AgentChat({
           error instanceof Error ? error.message : "Nieznany blad zapisu historii.";
         setHistoryStatus(`Historia nie zapisala sie: ${message}`);
       });
-  }, [historyLoading, messages]);
+  }, [authenticatedUserId, historyLoading, messages]);
 
   async function attachFile(file: File, source: "paste" | "upload" | "drop") {
     const validationError = validateImageFile(file);
@@ -899,7 +903,7 @@ export function AgentChat({
 
     const { data: createdConversation, error } = await supabase
       .from("conversations")
-      .insert({ title: "Nowa rozmowa" })
+      .insert({ title: "Nowa rozmowa", user_id: authenticatedUserId })
       .select("id,title")
       .single();
 

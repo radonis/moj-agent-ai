@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getAuthenticatedUser } from "../lib/auth";
 import { AppNav } from "./app-nav";
 
 type HistoryMessage = {
@@ -48,9 +49,18 @@ export function HistoryList() {
     }
 
     setLoading(true);
+    let user;
+    try {
+      user = await getAuthenticatedUser();
+    } catch (authError) {
+      setStatus(authError instanceof Error ? authError.message : "Wymagane logowanie.");
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from("conversations")
       .select("id,title,updated_at,messages(id,content,created_at)")
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -79,6 +89,7 @@ export function HistoryList() {
 
   async function deleteConversation(id: string) {
     if (!supabase) return;
+    const user = await getAuthenticatedUser();
 
     const confirmed = window.confirm(
       "Czy na pewno chcesz usunac te rozmowe? Tej operacji nie mozna cofnac.",
@@ -97,7 +108,8 @@ export function HistoryList() {
     const { error: conversationError } = await supabase
       .from("conversations")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
     if (conversationError) {
       setStatus(`Nie moge usunac rozmowy: ${conversationError.message}`);
       return;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { getBrowserUserId } from "../lib/user";
+import { getAuthenticatedUser } from "../lib/auth";
 import { ensureProfileWithLastSeen } from "../lib/profile";
 
 type StoredProfile = {
@@ -31,7 +31,8 @@ export function ProfileSummaryCard() {
       }
 
       try {
-        const profile = await ensureProfileWithLastSeen(supabase, getBrowserUserId());
+        const user = await getAuthenticatedUser();
+        const profile = await ensureProfileWithLastSeen(supabase, user.id);
 
         if (!isActive) return;
 

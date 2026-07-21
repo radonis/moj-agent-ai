@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { DashboardData } from "../lib/dashboard";
 import { formatLastSeen, touchProfileActivity } from "../lib/profile";
 import { supabase } from "../lib/supabase";
-import { getBrowserUserId } from "../lib/user";
+import { getAuthenticatedUser } from "../lib/auth";
 import { ProfileSummaryCard } from "./profile-summary-card";
 
 type DashboardShellProps = {
@@ -61,7 +61,8 @@ export function DashboardShell({ data }: DashboardShellProps) {
       }
 
       try {
-        const result = await touchProfileActivity(supabase, getBrowserUserId());
+        const user = await getAuthenticatedUser();
+        const result = await touchProfileActivity(supabase, user.id);
         if (!isActive) return;
 
         setGreetingName(result.profile.name?.trim() || "uzytkowniku");
