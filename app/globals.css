@@ -92,6 +92,14 @@ textarea {
   font-size: 1.1rem;
 }
 
+.app-nav-email {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .app-nav-kicker {
   color: #7dd3fc;
   font-size: 0.8rem;
@@ -2122,6 +2130,7 @@ textarea {
 .report-examples { display: grid; gap: 10px; }.report-examples > span { color: var(--muted); font-size: .9rem; }.report-examples > div { display: flex; flex-wrap: wrap; gap: 9px; }.report-examples button { padding: 9px 12px; border: 1px solid rgba(148,163,184,.2); border-radius: 999px; background: rgba(15,23,42,.5); color: #dbeafe; cursor: pointer; text-align: left; }.report-examples button:hover { border-color: rgba(125,211,252,.55); }.report-examples button:disabled { opacity: .55; cursor: not-allowed; }
 .report-progress { display: grid; gap: 7px; padding: 20px; border: 1px solid rgba(125,211,252,.22); border-radius: 18px; background: rgba(8,47,73,.28); color: #dbeafe; }.report-progress span { color: var(--muted); }
 .report-output { display: grid; gap: 20px; padding: 26px; border: 1px solid rgba(125,211,252,.22); border-radius: 22px; background: rgba(15,23,42,.56); }.report-output > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid rgba(148,163,184,.16); }.report-output h2 { margin: 4px 0 0; }.report-output .markdown-content { line-height: 1.65; }.report-output .markdown-content h2 { margin-top: 8px; color: #e0f2fe; }.report-output .markdown-content h3 { margin-top: 4px; color: #bae6fd; }
+.report-output-actions { display: flex; flex-wrap: wrap; gap: 10px; }.report-save-button { padding: 10px 14px; }.report-save-status { margin: -6px 0 0; color: #86efac; }
 
 @media (max-width: 640px) {
   .page {
