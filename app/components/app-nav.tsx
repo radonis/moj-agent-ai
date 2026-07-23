@@ -14,6 +14,7 @@ export const navItems = [
   { href: "/react", label: "ReAct", shortLabel: "ReAct" },
   { href: "/travel", label: "Podroze", shortLabel: "Podroze" },
   { href: "/email-triage", label: "📧 E-mail Triage", shortLabel: "Triage" },
+  { href: "/report", label: "📊 Raporty", shortLabel: "Raporty" },
   { href: "/search", label: "Szukaj", shortLabel: "Szukaj" },
   { href: "/upload", label: "Baza wiedzy", shortLabel: "Upload" },
   { href: "/knowledge", label: "Podglad wiedzy", shortLabel: "Knowledge" },
