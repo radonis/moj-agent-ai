@@ -35,7 +35,10 @@ export function BriefingsList() {
   async function generateNow() {
     setIsGenerating(true); setStatus("Generuję poranny briefing…");
     try {
-      const response = await fetch("/api/cron/morning");
+      const { data: sessionData } = await supabase?.auth.getSession() ?? {};
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("Sesja logowania wygasła. Zaloguj się ponownie.");
+      const response = await fetch("/api/cron/morning", { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error((await response.text()) || "Nie udało się uruchomić generatora.");
       await loadBriefings();
     } catch (error) {
