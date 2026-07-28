@@ -25,14 +25,12 @@ function fallbackAnalysis(type: WebhookType, data: Record<string, unknown>) {
   return `## Podsumowanie zamówienia\nZamówienie zostało zarejestrowane. Zweryfikuj płatność, potwierdź klientowi przyjęcie zamówienia i przekaż je do realizacji.`;
 }
 
-function isAuthorized(request: Request) {
-  const secret = process.env.WEBHOOK_SECRET;
-  const authorization = request.headers.get("authorization");
-  return Boolean(secret && authorization === `Bearer ${secret}`);
-}
-
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const secret = process.env.WEBHOOK_SECRET;
+  if (!secret) return Response.json({ error: "Brakuje konfiguracji WEBHOOK_SECRET w środowisku serwera." }, { status: 503 });
+  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return Response.json({ error: "Nieprawidłowy WEBHOOK_SECRET." }, { status: 401 });
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
