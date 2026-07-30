@@ -12,6 +12,19 @@ export default function LoginPage() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
+  async function handlePasswordReset() {
+    if (!supabase) return setStatus("Brak konfiguracji Supabase.");
+    if (!email.trim()) return setStatus("Wpisz adres e-mail, na który mamy wysłać link do zmiany hasła.");
+
+    setLoading(true);
+    setStatus("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    setStatus(error ? error.message : "Jeśli konto istnieje, wysłaliśmy link do zmiany hasła na podany e-mail.");
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) {
@@ -51,6 +64,7 @@ export default function LoginPage() {
         <button className="secondary-button" type="button" onClick={() => { setIsRegistering((value) => !value); setStatus(""); }}>
           {isRegistering ? "Mam już konto" : "Zarejestruj się"}
         </button>
+        {!isRegistering ? <button className="secondary-button" type="button" onClick={() => void handlePasswordReset()} disabled={loading}>Nie pamiętam hasła</button> : null}
         {status ? <p className="profile-status">{status}</p> : null}
       </section>
     </main>
