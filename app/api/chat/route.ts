@@ -29,7 +29,7 @@ import {
   summarizeValue,
 } from "../../lib/tools";
 import { generateImageFromPrompt } from "../generate-image/route";
-import { hasDailyTokenBudget, logApiUsage } from "../../lib/api-usage";
+import { hasDailyTokenBudget, logApiUsage, logBlockedMessage } from "../../lib/api-usage";
 import {
   BLOCKED_INPUT_MESSAGE,
   checkRateLimit,
@@ -304,6 +304,11 @@ export async function POST(req: Request) {
     "anonymous";
   const rateLimit = checkRateLimit(rateLimitKey);
   if (!rateLimit.allowed) {
+    await logBlockedMessage({
+      userId: body.userProfile?.id,
+      message: getLatestUserText(body.messages),
+      reason: "Limit wiadomości 50/h",
+    }).catch((error) => console.error("Nie udało się zapisać blokady:", error));
     return buildSingleMessageResponse({
       originalMessages: body.messages,
       responseText: `Osiągnąłeś limit wiadomości (50/h). Spróbuj za ${rateLimit.retryAfterMinutes} min.`,
@@ -326,6 +331,11 @@ export async function POST(req: Request) {
 
   const inputCheck = validateInput(latestInputText);
   if (!inputCheck.valid) {
+    await logBlockedMessage({
+      userId: body.userProfile?.id,
+      message: latestInputText,
+      reason: "Walidacja wejścia: długość lub zabroniona fraza",
+    }).catch((error) => console.error("Nie udało się zapisać blokady:", error));
     return buildSingleMessageResponse({
       originalMessages: body.messages,
       responseText: BLOCKED_INPUT_MESSAGE,

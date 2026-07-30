@@ -58,3 +58,23 @@ export async function logApiUsage({
 
   if (error) throw error;
 }
+
+export async function logBlockedMessage({
+  userId,
+  message,
+  reason,
+}: {
+  userId?: string;
+  message: string;
+  reason: string;
+}) {
+  const { error } = await getAdminClient().from("message_logs").insert({
+    user_id: userId ?? null,
+    message: message.slice(0, 2000),
+    message_length: message.length,
+    blocked: true,
+    block_reason: reason,
+  });
+
+  if (error) throw error;
+}
