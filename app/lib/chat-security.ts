@@ -21,6 +21,7 @@ const sensitiveOutputPatterns = [
 ];
 
 const messageTimestamps = new Map<string, number[]>();
+const characterTestCommand = /^\/test-znaki\s+(\d{1,5})$/i;
 
 export const BLOCKED_INPUT_MESSAGE =
   "Ta wiadomość została zablokowana z powodów bezpieczeństwa.";
@@ -38,6 +39,11 @@ export function validateInput(value: string) {
 
   const blocked = blockedInputPatterns.some((pattern) => pattern.test(value));
   return { valid: !blocked, sanitized: value };
+}
+
+export function getCharacterTestLength(value: string) {
+  const match = value.trim().match(characterTestCommand);
+  return match ? Number(match[1]) : null;
 }
 
 export function checkRateLimit(userId: string, now = Date.now()) {

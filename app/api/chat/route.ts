@@ -33,6 +33,7 @@ import {
   BLOCKED_INPUT_MESSAGE,
   checkRateLimit,
   filterOutput,
+  getCharacterTestLength,
   sanitizeInput,
   validateInput,
 } from "../../lib/chat-security";
@@ -309,7 +310,20 @@ export async function POST(req: Request) {
     });
   }
 
-  const inputCheck = validateInput(getLatestUserText(sanitizedMessages));
+  const latestInputText = getLatestUserText(sanitizedMessages);
+  const characterTestLength = getCharacterTestLength(latestInputText);
+  if (characterTestLength !== null) {
+    const inputCheck = validateInput("x".repeat(characterTestLength));
+    return buildSingleMessageResponse({
+      originalMessages: body.messages,
+      responseText: inputCheck.valid
+        ? `Test długości: ${characterTestLength} znaków. Wiadomość przeszłaby walidację.`
+        : BLOCKED_INPUT_MESSAGE,
+      messageMetadata: securityMetadata,
+    });
+  }
+
+  const inputCheck = validateInput(latestInputText);
   if (!inputCheck.valid) {
     return buildSingleMessageResponse({
       originalMessages: body.messages,
