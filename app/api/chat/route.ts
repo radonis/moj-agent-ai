@@ -29,6 +29,13 @@ import {
   summarizeValue,
 } from "../../lib/tools";
 import { generateImageFromPrompt } from "../generate-image/route";
+import {
+  BLOCKED_INPUT_MESSAGE,
+  checkRateLimit,
+  filterOutput,
+  sanitizeInput,
+  validateInput,
+} from "../../lib/chat-security";
 
 export const runtime = "nodejs";
 const maxSteps = 3;
@@ -162,6 +169,15 @@ function getLatestUserText(messages: RequestBody["messages"]) {
     : "";
 }
 
+function sanitizeMessages(messages: RequestBody["messages"]): RequestBody["messages"] {
+  return messages.map((message) => ({
+    ...message,
+    parts: message.parts.map((part) =>
+      part.type === "text" ? { ...part, text: sanitizeInput(part.text) } : part,
+    ),
+  }));
+}
+
 function shouldSearchKnowledge(text: string) {
   return KNOWLEDGE_QUERY_PATTERN.test(text);
 }
@@ -267,6 +283,27 @@ export async function POST(req: Request) {
   const generatedImages: NonNullable<ChatMetadata["generatedImages"]> = [];
 
   const body = (await req.json()) as RequestBody;
+  const rateLimitKey =
+    body.userProfile?.id?.trim() ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "anonymous";
+  const rateLimit = checkRateLimit(rateLimitKey);
+  if (!rateLimit.allowed) {
+    return Response.json(
+      {
+        error: `Osiągnąłeś limit wiadomości (50/h). Spróbuj za ${rateLimit.retryAfterMinutes} min.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const sanitizedMessages = sanitizeMessages(body.messages);
+  const inputCheck = validateInput(getLatestUserText(sanitizedMessages));
+  if (!inputCheck.valid) {
+    return Response.json({ error: BLOCKED_INPUT_MESSAGE }, { status: 400 });
+  }
+
+  body.messages = sanitizedMessages;
   const mode: ChatMode =
     body.mode && body.mode in chatPrompts ? body.mode : "casual";
   const model: ChatModel = body.model === "pro" ? "pro" : "flash";
@@ -382,7 +419,9 @@ Masz dostep do prawdziwego internetu i wielu narzedzi.
     stopWhen: isStepCount(maxSteps),
   });
 
-  const responseText = `${result.text}${formatSources(result.sources)}`;
+  const responseText = filterOutput(
+    `${result.text}${formatSources(result.sources)}`,
+  );
   const toolTimeline: NonNullable<ChatMetadata["toolTimeline"]> = [
     ...knowledgeToolTimeline,
   ];
