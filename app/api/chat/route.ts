@@ -29,6 +29,7 @@ import {
   summarizeValue,
 } from "../../lib/tools";
 import { generateImageFromPrompt } from "../generate-image/route";
+import { hasDailyTokenBudget, logApiUsage } from "../../lib/api-usage";
 import {
   BLOCKED_INPUT_MESSAGE,
   checkRateLimit,
@@ -332,6 +333,27 @@ export async function POST(req: Request) {
     });
   }
 
+  const usageUserId = body.userProfile?.id?.trim();
+  if (usageUserId) {
+    try {
+      const budget = await hasDailyTokenBudget(usageUserId);
+      if (!budget.allowed) {
+        return buildSingleMessageResponse({
+          originalMessages: body.messages,
+          responseText: "Dzienny limit tokenów (10k) został wyczerpany. Wróć jutro!",
+          messageMetadata: securityMetadata,
+        });
+      }
+    } catch (error) {
+      console.error("Nie udało się sprawdzić budżetu tokenów:", error);
+      return buildSingleMessageResponse({
+        originalMessages: body.messages,
+        responseText: "Nie mogę teraz sprawdzić budżetu wiadomości. Spróbuj ponownie za chwilę.",
+        messageMetadata: securityMetadata,
+      });
+    }
+  }
+
   const generateImage = tool({
     description:
       "Generuje obraz na podstawie opisu. Uzywaj gdy uzytkownik prosi o logo, grafike, ilustracje albo post wizualny.",
@@ -446,6 +468,19 @@ Masz dostep do prawdziwego internetu i wielu narzedzi.
   const responseText = filterOutput(
     `${result.text}${formatSources(result.sources)}`,
   );
+  if (usageUserId) {
+    try {
+      await logApiUsage({
+        userId: usageUserId,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        model: resolvedModel,
+        endpoint: "/api/chat",
+      });
+    } catch (error) {
+      console.error("Nie udało się zapisać zużycia tokenów:", error);
+    }
+  }
   const toolTimeline: NonNullable<ChatMetadata["toolTimeline"]> = [
     ...knowledgeToolTimeline,
   ];
