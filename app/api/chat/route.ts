@@ -283,30 +283,40 @@ export async function POST(req: Request) {
   const generatedImages: NonNullable<ChatMetadata["generatedImages"]> = [];
 
   const body = (await req.json()) as RequestBody;
+  const mode: ChatMode =
+    body.mode && body.mode in chatPrompts ? body.mode : "casual";
+  const model: ChatModel = body.model === "pro" ? "pro" : "flash";
+  const sanitizedMessages = sanitizeMessages(body.messages);
+  body.messages = sanitizedMessages;
+
+  const securityMetadata: ChatMetadata = {
+    mode,
+    model,
+    resolvedModel: "security",
+    toolCount: 0,
+    durationMs: Date.now() - startedAt,
+  };
   const rateLimitKey =
     body.userProfile?.id?.trim() ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "anonymous";
   const rateLimit = checkRateLimit(rateLimitKey);
   if (!rateLimit.allowed) {
-    return Response.json(
-      {
-        error: `Osiągnąłeś limit wiadomości (50/h). Spróbuj za ${rateLimit.retryAfterMinutes} min.`,
-      },
-      { status: 429 },
-    );
+    return buildSingleMessageResponse({
+      originalMessages: body.messages,
+      responseText: `Osiągnąłeś limit wiadomości (50/h). Spróbuj za ${rateLimit.retryAfterMinutes} min.`,
+      messageMetadata: securityMetadata,
+    });
   }
 
-  const sanitizedMessages = sanitizeMessages(body.messages);
   const inputCheck = validateInput(getLatestUserText(sanitizedMessages));
   if (!inputCheck.valid) {
-    return Response.json({ error: BLOCKED_INPUT_MESSAGE }, { status: 400 });
+    return buildSingleMessageResponse({
+      originalMessages: body.messages,
+      responseText: BLOCKED_INPUT_MESSAGE,
+      messageMetadata: securityMetadata,
+    });
   }
-
-  body.messages = sanitizedMessages;
-  const mode: ChatMode =
-    body.mode && body.mode in chatPrompts ? body.mode : "casual";
-  const model: ChatModel = body.model === "pro" ? "pro" : "flash";
 
   const generateImage = tool({
     description:
