@@ -28,6 +28,7 @@ export const navItems = [
   { href: "/format", label: "Formater", shortLabel: "Formater" },
   { href: "/extract", label: "Analizator", shortLabel: "Analizator" },
   { href: "/admin/security", label: "🛡️ Bezpieczeństwo", shortLabel: "Bezpieczeństwo" },
+  { href: "/admin/dashboard", label: "📊 Użycie", shortLabel: "Użycie" },
 ];
 const primaryRoutes = new Set(["/", "/profile", "/chat", "/agent", "/history", "/react", "/travel"]);
 

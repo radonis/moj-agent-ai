@@ -1,0 +1,34 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppNav } from "../../components/app-nav";
+import { supabase } from "../../lib/supabase";
+
+type Day = { key: string; label: string; tokens: number; conversations: number };
+type DashboardData = { stats: { users: number; conversations: number; tokensToday: number; costToday: number }; days: Day[]; endpoints: { name: string; value: number }[]; recent: { id: string; email: string; title: string; updatedAt: string; messages: number }[]; pricing: { perMillionTokens: number } };
+const number = new Intl.NumberFormat("pl-PL");
+
+function LineChart({ days }: { days: Day[] }) {
+  const max = Math.max(...days.map((day) => day.tokens), 1);
+  const pointList = days.map((day, index) => ({ x: 20 + index * 360 / Math.max(days.length - 1, 1), y: 140 - day.tokens / max * 105 }));
+  const points = pointList.map((point) => `${point.x},${point.y}`).join(" ");
+  return <div className="usage-chart"><div className="usage-chart-head"><div><h2>Tokeny dziennie</h2><p>Ostatnie 7 dni · input + output</p></div><strong>{number.format(days.reduce((sum, day) => sum + day.tokens, 0))}</strong></div><svg viewBox="0 0 400 178" role="img" aria-label="Wykres tokenów dziennie"><defs><linearGradient id="usage-line-fill" x1="0" x2="0" y1="0" y2="1"><stop stopColor="#8b7cff" stopOpacity=".36"/><stop offset="1" stopColor="#8b7cff" stopOpacity="0"/></linearGradient></defs><path className="usage-chart-grid" d="M20 35H390M20 88H390M20 140H390"/><polygon points={`20,140 ${points} 380,140`} fill="url(#usage-line-fill)"/><polyline points={points} className="usage-line"/>{days.map((day, index) => <g key={day.key}><circle cx={pointList[index].x} cy={pointList[index].y} r="4" className="usage-point"/><text x={pointList[index].x} y="166" textAnchor="middle">{day.label}</text></g>)}</svg></div>;
+}
+
+function BarChart({ days }: { days: Day[] }) {
+  const max = Math.max(...days.map((day) => day.conversations), 1);
+  return <div className="usage-chart"><div className="usage-chart-head"><div><h2>Rozmowy dziennie</h2><p>Utworzone rozmowy · ostatnie 7 dni</p></div><strong>{number.format(days.reduce((sum, day) => sum + day.conversations, 0))}</strong></div><svg viewBox="0 0 400 178" role="img" aria-label="Wykres rozmów dziennie"><path className="usage-chart-grid" d="M20 35H390M20 88H390M20 140H390"/>{days.map((day, index) => { const x = 30 + index * 52; const height = day.conversations / max * 105; return <g key={day.key}><rect x={x} y={140 - height} width="28" height={height} rx="5" className="usage-bar"/><text x={x + 14} y="166" textAnchor="middle">{day.label}</text></g>; })}</svg></div>;
+}
+
+function DonutChart({ endpoints }: { endpoints: DashboardData["endpoints"] }) {
+  const total = endpoints.reduce((sum, endpoint) => sum + endpoint.value, 0); const colors = ["#9384ff", "#4fd1c5", "#f5b765", "#ef7f9e", "#7ca7ff"]; let offset = 0;
+  return <div className="usage-chart usage-endpoints"><div className="usage-chart-head"><div><h2>Tokeny według endpointu</h2><p>Udział w ostatnich 7 dniach</p></div></div>{total ? <div className="usage-donut-wrap"><svg className="usage-donut" viewBox="0 0 42 42" role="img" aria-label="Podział tokenów według endpointu"><circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#242b40" strokeWidth="5"/>{endpoints.map((endpoint, index) => { const share = endpoint.value / total * 100; const item = <circle key={endpoint.name} cx="21" cy="21" r="15.915" fill="transparent" stroke={colors[index % colors.length]} strokeWidth="5" strokeDasharray={`${share} ${100 - share}`} strokeDashoffset={-offset} transform="rotate(-90 21 21)"/>; offset += share; return item; })}</svg><div className="usage-legend">{endpoints.map((endpoint, index) => <div key={endpoint.name}><i style={{ backgroundColor: colors[index % colors.length] }} /><span>{endpoint.name.replace("/api", "")}</span><strong>{Math.round(endpoint.value / total * 100)}%</strong></div>)}</div></div> : <div className="usage-empty-chart">Brak danych o użyciu w ostatnich 7 dniach.</div>}</div>;
+}
+
+export default function AdminDashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null); const [error, setError] = useState(""); const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => { setLoading(true); setError(""); if (!supabase) { setError("Brak konfiguracji Supabase."); setLoading(false); return; } const { data: session } = await supabase.auth.getSession(); const token = session.session?.access_token; if (!token) { setError("Zaloguj się jako administrator."); setLoading(false); return; } const response = await fetch("/api/admin/dashboard", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }); const payload = await response.json(); if (!response.ok) setError(payload.error ?? "Nie udało się pobrać dashboardu."); else setData(payload); setLoading(false); }, []);
+  useEffect(() => { void load(); }, [load]);
+  const cards = useMemo(() => data ? [["👤", "Użytkownicy", number.format(data.stats.users), "unikalni w rozmowach"], ["💬", "Rozmowy", number.format(data.stats.conversations), "wszystkie zapisane"], ["🔤", "Tokeny dzisiaj", number.format(data.stats.tokensToday), "input + output"], ["💰", "Koszt dzisiaj", "$" + data.stats.costToday.toFixed(4), "$" + data.pricing.perMillionTokens + "/1 mln tokenów"]] : [], [data]);
+  return <main className="page page-scroll app-page"><AppNav /><section className="usage-dashboard"><header className="usage-header"><div><p>ADMIN · MONITORING UŻYCIA</p><h1>📊 Dashboard</h1><span>Aktualny obraz aktywności i kosztów Twojego agenta.</span></div><button onClick={() => void load()} disabled={loading}>{loading ? "Odświeżam…" : "↻ Odśwież dane"}</button></header>{error ? <div className="empty-state"><p>{error}</p></div> : loading && !data ? <div className="empty-state"><p>Ładuję dane z Supabase…</p></div> : data ? <><section className="usage-kpis">{cards.map(([icon, label, value, note]) => <article key={String(label)}><span>{icon}</span><div><small>{label}</small><strong>{value}</strong><em>{note}</em></div></article>)}</section><section className="usage-charts"><LineChart days={data.days}/><BarChart days={data.days}/><DonutChart endpoints={data.endpoints}/></section><section className="usage-recent"><header><div><p>OSTATNIA AKTYWNOŚĆ</p><h2>Ostatnie rozmowy</h2></div><span>10 najnowszych</span></header>{data.recent.length ? <div className="usage-table-wrap"><table><thead><tr><th>Użytkownik</th><th>Tytuł rozmowy</th><th>Wiadomości</th><th>Ostatnia aktywność</th></tr></thead><tbody>{data.recent.map((row) => <tr key={row.id}><td>{row.email}</td><td>{row.title}</td><td><b>{row.messages}</b></td><td>{new Date(row.updatedAt).toLocaleString("pl-PL")}</td></tr>)}</tbody></table></div> : <p className="usage-empty-table">Nie ma jeszcze zapisanych rozmów.</p>}</section></> : null}</section></main>;
+}
