@@ -7,10 +7,11 @@ import { supabase } from "../lib/supabase";
 export function AuthGuard({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const router = useRouter();
-  const [ready, setReady] = useState(pathname === "/login");
+  const isPublicPage = pathname === "/" || pathname === "/login";
+  const [ready, setReady] = useState(isPublicPage);
 
   useEffect(() => {
-    if (pathname === "/login") {
+    if (pathname === "/" || pathname === "/login") {
       setReady(true);
       return;
     }
@@ -40,7 +41,7 @@ export function AuthGuard({ children }: PropsWithChildren) {
     };
   }, [pathname, router]);
 
-  if (!ready && pathname !== "/login") {
+  if (!ready && !isPublicPage) {
     return <main className="page"><p>Sprawdzam logowanie...</p></main>;
   }
 
