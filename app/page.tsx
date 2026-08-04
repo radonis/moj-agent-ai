@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
+import { ThemeToggle } from "./components/theme-toggle";
 
 const features = [
   { icon: "🧠", title: "Pamięta Twoje rozmowy", text: "Wracaj do kontekstu bez zaczynania od zera." },
@@ -60,7 +61,7 @@ export default function HomePage() {
       <div className="landing-orb landing-orb-two" />
       <nav className="landing-nav">
         <Link className="landing-brand" href="/"><span>R</span> Radonis</Link>
-        <Link className="landing-nav-login" href="/login">Zaloguj się</Link>
+        <div className="landing-nav-actions"><ThemeToggle /><Link className="landing-nav-login" href="/login">Zaloguj się</Link></div>
       </nav>
 
       <section className="landing-hero">
