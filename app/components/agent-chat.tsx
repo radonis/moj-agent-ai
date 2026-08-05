@@ -625,7 +625,7 @@ export function AgentChat({
     welcomeCreatedRef.current = true;
     const greeting = profile.name
       ? `Czesc, ${profile.name}! Milo Cie znowu widziec. W czym moge Ci dzis pomoc?`
-      : "Czesc! Jestem Marta, Twoja doradczyni podatkowa. Nie znamy sie jeszcze - jak masz na imie?";
+      : "Cześć! Jestem Mr. Watt, ekspert ds. rynków energetycznych. Pomagam analizować ceny energii, regulacje i efektywność energetyczną w Polsce oraz UE. W czym mogę pomóc?";
     setMessages([
       {
         id: `welcome-${crypto.randomUUID()}`,
@@ -1035,7 +1035,7 @@ export function AgentChat({
   }
 
   const showVisionDropzone = visionMode && !attachedImage;
-  const showInputStarters = starterPlacement === "input" && (!visionMode || attachedImage);
+  const showInputStarters = starterQuestions.length > 0 && starterPlacement === "input" && (!visionMode || attachedImage);
 
   return (
     <main className={`page app-page ${reactMode ? "page-scroll" : ""}`}>
@@ -1060,7 +1060,7 @@ export function AgentChat({
               ))}
             </div>
           ) : null}
-          {starterPlacement === "header" ? (
+          {starterQuestions.length > 0 && starterPlacement === "header" ? (
             <div className="starter-grid">
               {starterQuestions.map((question) => (
                 <button
