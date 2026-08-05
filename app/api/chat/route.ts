@@ -19,7 +19,10 @@ import {
   RequestBody,
   UserProfilePayload,
 } from "../../lib/agent";
-import { searchKnowledgeDocuments } from "../../lib/knowledge";
+import {
+  listKnowledgeChunks,
+  searchKnowledgeDocuments,
+} from "../../lib/knowledge";
 import {
   calculator,
   currentDateTime,
@@ -42,7 +45,7 @@ import {
 export const runtime = "nodejs";
 const maxSteps = 3;
 const KNOWLEDGE_QUERY_PATTERN =
-  /\b(cena|ceny|cennik|koszt|kosztuje|kosztuja|pakiet|premium|basic|vip|oferta|regulamin|warunki|faq|rezygnac|subskrypc|uslug|uslug|netflix|tesla)\b/i;
+  /\b(cena|ceny|cennik|koszt|kosztuje|kosztuja|najtansz\w*|najdrozs\w*|pakiet|premium|basic|vip|oferta|regulamin|warunki|faq|rezygnac|subskrypc|uslug|uslug|netflix|tesla)\b/i;
 
 function attachImageToMessages(
   messages: ModelMessage[],
@@ -217,9 +220,27 @@ function getDistinctiveQueryTerms(text: string) {
     new Set(
       normalizeKnowledgeText(text)
         .match(/[a-z0-9-]{3,}/g)
-        ?.filter((term) => !KNOWLEDGE_QUERY_STOP_WORDS.has(term)) ?? [],
+        ?.filter(
+          (term) =>
+            !KNOWLEDGE_QUERY_STOP_WORDS.has(term) &&
+            !term.startsWith("najtansz") &&
+            !term.startsWith("najdrozs"),
+        ) ?? [],
     ),
   );
+}
+
+function isCatalogComparisonQuestion(text: string) {
+  const normalizedText = normalizeKnowledgeText(text);
+  return /\b(najtansz\w*|najdrozs\w*|najmniejsz\w*\s+cena|najwieksz\w*\s+cena)\b/.test(
+    normalizedText,
+  );
+}
+
+function getKnowledgeSourceTitle(
+  result: Awaited<ReturnType<typeof searchKnowledgeDocuments>>["results"][number],
+) {
+  return typeof result.metadata?.source === "string" ? result.metadata.source : result.title;
 }
 
 function hasRelevantKnowledgeTerm(
@@ -254,10 +275,7 @@ function selectKnowledgeResultsForAnswer(
 
   const preferredResult =
     relevantResults.find((result) => {
-      const source =
-        typeof result.metadata?.source === "string"
-          ? result.metadata.source
-          : result.title;
+      const source = getKnowledgeSourceTitle(result);
 
       return source.toLowerCase().includes("cennik");
     }) ?? relevantResults[0];
@@ -447,10 +465,29 @@ export async function POST(req: Request) {
       matchThreshold: 0.5,
       matchCount: 5,
     });
-    const resultsForAnswer = selectKnowledgeResultsForAnswer(
+    let resultsForAnswer = selectKnowledgeResultsForAnswer(
       results,
       latestUserText,
     );
+
+    // Pytanie o najtańszą lub najdroższą pozycję wymaga porównania całego
+    // cennika, a nie tylko pięciu fragmentów zwróconych przez wyszukiwanie.
+    if (isCatalogComparisonQuestion(latestUserText)) {
+      const catalogResult = resultsForAnswer.find((result) =>
+        getKnowledgeSourceTitle(result).toLowerCase().includes("cennik"),
+      );
+
+      if (catalogResult) {
+        const chunks = await listKnowledgeChunks(catalogResult.title);
+        resultsForAnswer = chunks.map((chunk) => ({
+          title: chunk.title,
+          content: chunk.content,
+          similarity: catalogResult.similarity,
+          metadata: chunk.metadata,
+          addedAt: chunk.createdAt,
+        }));
+      }
+    }
     const sources = getKnowledgeSources(resultsForAnswer);
 
     knowledgeToolTimeline.push({
@@ -485,6 +522,7 @@ export async function POST(req: Request) {
 Instrukcja nadrzedna dla odpowiedzi z bazy wiedzy:
 - Odpowiedz tylko na dokladnie zadane pytanie, na podstawie powyzszych fragmentow.
 - Jesli uzytkownik pyta tylko o cene, podaj tylko cene. Nie wymieniaj cech pakietu, limitow, rekomendacji ani dodatkowych warunkow.
+- Gdy pytanie dotyczy najtanszej lub najdrozszej pozycji, porownaj wszystkie przekazane fragmenty cennika przed odpowiedzia. Podaj nazwe pozycji oraz jej cene; nie zgaduj na podstawie pojedynczego fragmentu.
 - Nie dodawaj rekomendacji, porad zakupowych, personalizacji firmowej ani pytania koncowego, chyba ze uzytkownik wyraznie o to poprosi.
 - Nie dolaczaj informacji z innego dokumentu tylko dlatego, ze jest dostepna, jesli nie odpowiada bezposrednio na pytanie.
 - Na koncu dodaj dokladnie jedna linie: "${
