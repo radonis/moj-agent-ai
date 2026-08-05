@@ -197,23 +197,70 @@ function isPriceOnlyKnowledgeQuestion(text: string) {
   return asksAboutPrice && !asksForDetails;
 }
 
+const KNOWLEDGE_QUERY_STOP_WORDS = new Set([
+  "a", "baza", "bazie", "cena", "ceny", "ciepla", "co", "czy", "dla",
+  "faq", "ile", "informacja", "informacje", "jest", "jaka", "jaki", "jakie",
+  "koszt", "kosztuje", "mam", "model", "na", "o", "oferta", "pakiet",
+  "pompa", "pomp", "pytanie", "regulamin", "sa", "sie", "sklep", "to",
+  "usluga", "uslugi", "warunki", "w", "z", "ze",
+]);
+
+function normalizeKnowledgeText(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getDistinctiveQueryTerms(text: string) {
+  return Array.from(
+    new Set(
+      normalizeKnowledgeText(text)
+        .match(/[a-z0-9-]{3,}/g)
+        ?.filter((term) => !KNOWLEDGE_QUERY_STOP_WORDS.has(term)) ?? [],
+    ),
+  );
+}
+
+function hasRelevantKnowledgeTerm(
+  result: Awaited<ReturnType<typeof searchKnowledgeDocuments>>["results"][number],
+  distinctiveTerms: string[],
+) {
+  if (distinctiveTerms.length === 0) {
+    return true;
+  }
+
+  const source =
+    typeof result.metadata?.source === "string" ? result.metadata.source : result.title;
+  const searchableText = normalizeKnowledgeText(`${source} ${result.title} ${result.content}`);
+
+  return distinctiveTerms.some((term) => searchableText.includes(term));
+}
+
 function selectKnowledgeResultsForAnswer(
   results: Awaited<ReturnType<typeof searchKnowledgeDocuments>>["results"],
   latestUserText: string,
 ) {
+  // Similarity wektorowa bywa zbyt ogólna: pytanie o cenę Tesli może pasować do
+  // dowolnego cennika. Jeżeli pytanie zawiera nazwę konkretnego produktu, musi
+  // ona wystąpić także w znalezionym fragmencie — w przeciwnym razie odmawiamy.
+  const relevantResults = results.filter((result) =>
+    hasRelevantKnowledgeTerm(result, getDistinctiveQueryTerms(latestUserText)),
+  );
+
   if (!isPriceOnlyKnowledgeQuestion(latestUserText)) {
-    return results;
+    return relevantResults;
   }
 
   const preferredResult =
-    results.find((result) => {
+    relevantResults.find((result) => {
       const source =
         typeof result.metadata?.source === "string"
           ? result.metadata.source
           : result.title;
 
       return source.toLowerCase().includes("cennik");
-    }) ?? results[0];
+    }) ?? relevantResults[0];
 
   return preferredResult ? [preferredResult] : [];
 }
