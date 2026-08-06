@@ -16,7 +16,7 @@ function ProductPreview() {
   return (
     <div className="landing-preview" aria-label="Podgląd interfejsu Mój Agent">
       <div className="landing-preview-sidebar">
-        <div className="landing-preview-logo">R</div>
+        <img className="landing-preview-logo" src="/iterminal-logo.svg" alt="iTerminal" />
         <span className="landing-preview-nav active" />
         <span className="landing-preview-nav" />
         <span className="landing-preview-nav" />
@@ -60,7 +60,7 @@ export default function HomePage() {
       <div className="landing-orb landing-orb-one" />
       <div className="landing-orb landing-orb-two" />
       <nav className="landing-nav">
-        <Link className="landing-brand" href="/"><span>R</span> Radonis</Link>
+        <Link className="landing-brand" href="/"><img className="landing-brand-logo" src="/iterminal-logo.svg" alt="" /> iTerminal</Link>
         <div className="landing-nav-actions"><ThemeToggle /><Link className="landing-nav-login" href="/login">Zaloguj się</Link></div>
       </nav>
 

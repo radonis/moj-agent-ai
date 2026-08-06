@@ -6,24 +6,25 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { ThemeToggle } from "./theme-toggle";
 
-type NavItem = { href: string; label: string; shortLabel: string };
+type NavItem = { href: string; label: string; shortLabel: string; icon?: string };
 
 const primaryNavItems: NavItem[] = [
-  { href: "/", label: "Dashboard", shortLabel: "Dashboard" },
-  { href: "/chat", label: "Chat", shortLabel: "Chat" },
-  { href: "/agent", label: "Agent", shortLabel: "Agent" },
-  { href: "/travel", label: "Podróże", shortLabel: "Podróże" },
-  { href: "/history", label: "Historia", shortLabel: "Historia" },
-  { href: "/react", label: "ReAct", shortLabel: "ReAct" },
-  { href: "/energy-market", label: "Rynek energii", shortLabel: "Energia" },
-  { href: "/vision", label: "Vision", shortLabel: "Vision" },
-  { href: "/think", label: "Myślenie", shortLabel: "Myślenie" },
-  { href: "/search", label: "Szukaj", shortLabel: "Szukaj" },
+  { href: "/", label: "Dashboard", shortLabel: "Dashboard", icon: "inne" },
+  { href: "/chat", label: "Chat", shortLabel: "Chat", icon: "chat" },
+  { href: "/agent", label: "Agent", shortLabel: "Agent", icon: "agent" },
+  { href: "/travel", label: "Podróże", shortLabel: "Podróże", icon: "podroze" },
+  { href: "/history", label: "Historia", shortLabel: "Historia", icon: "historia" },
+  { href: "/react", label: "ReAct", shortLabel: "ReAct", icon: "react" },
+  { href: "/energy-market", label: "Rynek energii", shortLabel: "Energia", icon: "rynek-energii" },
+  { href: "/vision", label: "Vision", shortLabel: "Vision", icon: "vision" },
+  { href: "/think", label: "Myślenie", shortLabel: "Myślenie", icon: "myslenie" },
+  { href: "/search", label: "Szukaj", shortLabel: "Szukaj", icon: "szukaj" },
 ];
 
-const secondaryNavGroups: Array<{ label: string; items: NavItem[] }> = [
+const secondaryNavGroups: Array<{ label: string; icon: string; items: NavItem[] }> = [
   {
     label: "Inne",
+    icon: "inne",
     items: [
       { href: "/briefings", label: "Briefingi", shortLabel: "Briefingi" },
       { href: "/email-triage", label: "E-mail Triage", shortLabel: "Triage" },
@@ -38,6 +39,7 @@ const secondaryNavGroups: Array<{ label: string; items: NavItem[] }> = [
   },
   {
     label: "Admin",
+    icon: "admin",
     items: [
       { href: "/admin/security", label: "Bezpieczeństwo", shortLabel: "Bezpieczeństwo" },
       { href: "/admin/dashboard", label: "Użycie", shortLabel: "Użycie" },
@@ -103,7 +105,7 @@ export function AppNav() {
             const hasActiveItem = group.items.some((item) => isActive(item.href));
             return <div className="app-nav-group" key={group.label}>
               <button type="button" className={`app-nav-group-toggle ${hasActiveItem ? "active" : ""}`} onClick={() => toggleGroup(group.label)} aria-expanded={isExpanded}>
-                <span>{group.label}</span><span className="app-nav-group-chevron" aria-hidden="true">⌄</span>
+                <span className="app-nav-label"><img className="app-nav-icon" src={`/icons/${group.icon}.png`} alt="" /><span>{group.label}</span></span><span className="app-nav-group-chevron" aria-hidden="true">⌄</span>
               </button>
               {isExpanded ? <div className="app-nav-submenu">
                 {group.items.map((item) => <NavLink key={item.href} item={item} active={isActive(item.href)} onNavigate={closeMenu} />)}
@@ -120,6 +122,6 @@ export function AppNav() {
 
 function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate: () => void }) {
   return <Link href={item.href} onClick={onNavigate} className={`app-nav-link ${active ? "active" : ""}`}>
-    <span>{item.label}</span><small>{item.shortLabel}</small>
+    {item.icon ? <img className="app-nav-icon" src={`/icons/${item.icon}.png`} alt="" /> : null}<span>{item.label}</span><small>{item.shortLabel}</small>
   </Link>;
 }

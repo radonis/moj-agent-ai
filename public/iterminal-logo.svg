@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fb7185"></stop><stop offset=".55" stop-color="#f97316"></stop><stop offset="1" stop-color="#f59e0b"></stop>
+  </linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#ig)"></rect>
+  <path d="M15 20 L27 32 L15 44" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+  <text x="31" y="42" font-family="Inter, Arial, sans-serif" font-weight="800" fill="#fff" letter-spacing="-1"><tspan font-size="19">i</tspan><tspan font-size="27">T</tspan></text>
+</svg>
