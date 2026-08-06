@@ -9,13 +9,13 @@ import { ThemeToggle } from "./theme-toggle";
 type NavItem = { href: string; label: string; shortLabel: string };
 
 const primaryNavItems: NavItem[] = [
+  { href: "/", label: "Dashboard", shortLabel: "Dashboard" },
   { href: "/chat", label: "Chat", shortLabel: "Chat" },
   { href: "/agent", label: "Agent", shortLabel: "Agent" },
   { href: "/travel", label: "Podróże", shortLabel: "Podróże" },
   { href: "/history", label: "Historia", shortLabel: "Historia" },
   { href: "/react", label: "ReAct", shortLabel: "ReAct" },
   { href: "/energy-market", label: "Rynek energii", shortLabel: "Energia" },
-  { href: "/generate", label: "Grafiki", shortLabel: "Grafiki" },
   { href: "/vision", label: "Vision", shortLabel: "Vision" },
   { href: "/think", label: "Myślenie", shortLabel: "Myślenie" },
   { href: "/search", label: "Szukaj", shortLabel: "Szukaj" },
@@ -25,7 +25,6 @@ const secondaryNavGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Inne",
     items: [
-      { href: "/", label: "Dashboard", shortLabel: "Dashboard" },
       { href: "/briefings", label: "Briefingi", shortLabel: "Briefingi" },
       { href: "/email-triage", label: "E-mail Triage", shortLabel: "Triage" },
       { href: "/profile", label: "Profil", shortLabel: "Profil" },
@@ -34,6 +33,7 @@ const secondaryNavGroups: Array<{ label: string; items: NavItem[] }> = [
       { href: "/fewshot", label: "Słownik AI", shortLabel: "Słownik" },
       { href: "/format", label: "Formater", shortLabel: "Formater" },
       { href: "/extract", label: "Analizator", shortLabel: "Analizator" },
+      { href: "/generate", label: "Grafiki", shortLabel: "Grafiki" },
     ],
   },
   {
@@ -94,7 +94,6 @@ export function AppNav() {
       {isOpen ? <button className="mobile-nav-backdrop" type="button" onClick={closeMenu} /> : null}
       <aside className={`app-nav ${isOpen ? "open" : ""}`} id="mobile-navigation">
         <div className="app-nav-brand">
-          <span className="app-nav-kicker">Radonis</span><strong>alter ego</strong>
           {email ? <span className="app-nav-email" title={email}>{email}</span> : null}
         </div>
         <nav className="app-nav-links" aria-label="Główna nawigacja">

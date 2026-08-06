@@ -84,9 +84,9 @@ export default function GeneratePage() {
   }
 
   return (
-    <main className="page">
+    <main className="page page-scroll app-page">
+      <AppNav />
       <section className="chat-shell image-generator-shell">
-        <AppNav />
 
         <header className="chat-header">
           <h1>🎨 Generator grafik AI</h1>
