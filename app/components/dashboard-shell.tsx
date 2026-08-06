@@ -7,7 +7,6 @@ import { DashboardData } from "../lib/dashboard";
 import { formatLastSeen, touchProfileActivity } from "../lib/profile";
 import { supabase } from "../lib/supabase";
 import { getAuthenticatedUser } from "../lib/auth";
-import { ProfileSummaryCard } from "./profile-summary-card";
 
 type DashboardShellProps = {
   data: DashboardData;
@@ -190,8 +189,6 @@ export function DashboardShell({ data }: DashboardShellProps) {
             ))}
           </div>
         </article>
-
-        <ProfileSummaryCard />
       </div>
     </section>
   );
